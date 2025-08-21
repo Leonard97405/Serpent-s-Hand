@@ -12,10 +12,12 @@ using LabApi.Events.Arguments.Scp106Events;
 using LabApi.Events.Arguments.Scp173Events;
 using LabApi.Events.CustomHandlers;
 using LabApi.Features.Wrappers;
+using MapGeneration;
 using MEC;
 using NetRoleManager;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
+using UnityEngine;
 using VoiceChat;
 
 namespace SerpentHands
@@ -27,7 +29,20 @@ namespace SerpentHands
         public override string Description { get; set; } = "Collabora con gli scp per uccidere tutti gli umani";
         public override RoleTypeId RoleTypeId { get; set; } = RoleTypeId.Tutorial;
         public override int SpawnChance { get; set; } =0;
+        public override int MaxPlayersAllowed { get; set; } = 0;
         public override float SpawnDelay { get; set; } =0;
+
+        public override SpawnProperty[] SpawnProperties { get; set; } = new[]
+        {
+            new SpawnProperty()
+            {
+                Chance = 100,
+                Offset = new Vector3(-63f,-8,-50.8f),
+                RoomName = RoomName.Outside,
+            }
+        };
+    
+
         public override void OnRoleAdded(Player player)
         {
             RoleEvents.sHs.Add(player);
@@ -111,7 +126,15 @@ namespace SerpentHands
             } 
         }
 
-       
+        public override void OnServerRoundStarted()
+        {
+            Timing.CallDelayed(Plugin.Singleton.Config.SpawnDelay - 20, () =>
+            {
+                Plugin.Singleton.Config._hand.MaxPlayersAllowed =
+                    Player.ReadyList.Where(p => p.Role != RoleTypeId.Overwatch).Count() /
+                     100 * Plugin.Singleton.Config.RappSH;
+            });
+        }
 
         public override void OnPlayerDying(PlayerDyingEventArgs ev)
         {
