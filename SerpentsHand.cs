@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
+using CustomPlayerEffects;
 using HintServiceMeow.Core.Enum;
 using HintServiceMeow.Core.Models.Hints;
 using HintServiceMeow.Core.Utilities;
 using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Arguments.Scp049Events;
 using LabApi.Events.Arguments.Scp079Events;
 using LabApi.Events.Arguments.Scp096Events;
+using LabApi.Events.Arguments.Scp106Events;
 using LabApi.Events.Arguments.Scp173Events;
 using LabApi.Events.CustomHandlers;
 using LabApi.Features.Wrappers;
@@ -13,6 +16,7 @@ using MEC;
 using NetRoleManager;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
+using VoiceChat;
 
 namespace SerpentHands
 {
@@ -24,11 +28,15 @@ namespace SerpentHands
         public override RoleTypeId RoleTypeId { get; set; } = RoleTypeId.Tutorial;
         public override int SpawnChance { get; set; } =0;
         public override float SpawnDelay { get; set; } =0;
+        public override void OnRoleAdded(Player player)
+        {
+            RoleEvents.sHs.Add(player);
+        }
     }
 
     public class RoleEvents : CustomEventsHandler
     {
-        private static List<Player> sHs = new List<Player>();
+        public static List<Player> sHs = new List<Player>();
         private DynamicHint dH = new DynamicHint()
         {
             Id = "serpentId",
@@ -79,6 +87,16 @@ namespace SerpentHands
             }
         }
 
+        public override void OnScp049UsingSense(Scp049UsingSenseEventArgs ev)
+        {
+            if (sHs.Contains(ev.Target)) ev.IsAllowed = false;
+        }
+
+        public override void OnScp106TeleportingPlayer(Scp106TeleportingPlayerEvent ev)
+        {
+            if (sHs.Contains(ev.Target)) ev.IsAllowed = false;
+        }
+
         public override void OnScp079Recontaining(Scp079RecontainingEventArgs ev)
         {
             if (ev.Activator != null)
@@ -93,17 +111,7 @@ namespace SerpentHands
             } 
         }
 
-        public override void OnPlayerChangedRole(PlayerChangedRoleEventArgs ev)
-        {
-            Timing.CallDelayed(0.5f, () =>
-            {
-                if (NetRoleManager.NetRoleManager.Instance.HasCustomRole(ev.Player,
-                        Plugin.Singleton.Config._hand.RoleId))
-                {
-                    sHs.Add(ev.Player);
-                }
-            });
-        }
+       
 
         public override void OnPlayerDying(PlayerDyingEventArgs ev)
         {
@@ -133,5 +141,15 @@ namespace SerpentHands
             if (NetRoleManager.NetRoleManager.Instance.HasCustomRole(ev.Target, Plugin.Singleton.Config._hand.RoleId))
                 ev.IsAllowed = false;
         }
+
+        public override void OnPlayerUpdatingEffect(PlayerEffectUpdatingEventArgs ev)
+        {
+            AmnesiaVision z = new AmnesiaVision();
+            Stained s = new Stained();
+            Corroding c = new Corroding();
+            if (sHs.Contains(ev.Player) && (ev.Effect.name == c.name || ev.Effect.name == s.name || ev.Effect.name == z.name)) ev.IsAllowed = false;
+            
+        }
+        
     }
 }
