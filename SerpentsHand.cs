@@ -171,8 +171,20 @@ namespace SerpentHands
             Stained s = new Stained();
             Corroding c = new Corroding();
             if (sHs.Contains(ev.Player) && (ev.Effect.name == c.name || ev.Effect.name == s.name || ev.Effect.name == z.name)) ev.IsAllowed = false;
-            
         }
-        
+
+        private static List<Player> escapingP = new List<Player>();
+        public override void OnPlayerEscaping(PlayerEscapingEventArgs ev)
+        {
+            if (escapingP.Contains(ev.Player) || !ev.Player.IsDisarmed) return;
+            if (NetRoleManager.NetRoleManager.Instance.HasCustomRole(ev.Player.DisarmedBy,
+                    Plugin.Singleton.Config._hand.RoleId))
+            {
+                escapingP.Add(ev.Player);
+                ev.Player.SetRole(RoleTypeId.Tutorial);
+                NetRoleManager.NetRoleManager.Instance.AssignRole(ev.Player,Plugin.Singleton.Config._hand);
+                escapingP.Remove(ev.Player);
+            }
+        }
     }
 }
